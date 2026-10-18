@@ -218,3 +218,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Gizli anahtarlar
+.env
+
+# Veri dosyaları
+data/raw/
+data/processed/
+
+# Vektör veritabanı
+chroma_db/
+
+# Mac sistem dosyaları
+.DS_Store
+
+# Editör ayarları
+.vscode/

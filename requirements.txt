@@ -1,0 +1,13 @@
+pandas
+numpy
+requests
+python-dotenv
+google-genai
+sentence-transformers
+chromadb
+rank_bm25
+scikit-learn
+matplotlib
+seaborn
+streamlit
+ipykernel
