@@ -26,8 +26,6 @@ PROTECTED_WORDS = [
     "CryptoRobo", "SpecTor",
 ]
 
-RELATED_LINK_MARKER = "İlginizi çekebilir:"
-
 LABEL_FIXES = {"kismen yanliş": "kısmen yanlış"}
 
 VERDICT_GROUPS = {
@@ -50,16 +48,19 @@ SOURCE_NAMES = {
 SENTENCE_END_CHARS = set('.!?"”)')
 
 def remove_related_links(text, tail=200):
-    """Remove a trailing 'İlginizi çekebilir: ...' recommendation."""
-    pos = text.rfind(RELATED_LINK_MARKER)
+    """Remove 'İlginizi çekebilir: <title>' recommendations anywhere in the text.
 
-    if pos != -1 and pos >= len(text) - tail:
-        return text[:pos]
-    return text
+    Must run after split_glued_text, so that each title ends with a period.
+    """
+    return re.sub(r"İlginizi çekebilir:[^.!?]*[.!?]?", "", text)
 
 def split_glued_text(text):
     """Insert missing separators between glued sentences and headings."""
-    # 1. Temporarily replace protected words so the regex cannot split them
+    # 1. "edildi.İddialara" -> "edildi. İddialara"
+    #    Runs before masking so sentences starting with a protected word are also split
+    text = re.sub(r"([.!?])([A-ZÇĞİÖŞÜ])", r"\1 \2", text)
+
+    # 2. Temporarily replace protected words so the heading rule cannot split them
     placeholders = {}
     for i, word in enumerate(PROTECTED_WORDS):
         if word in text:
@@ -67,15 +68,12 @@ def split_glued_text(text):
             text = text.replace(word, key)
             placeholders[key] = word
 
-    # 2. "edildi.İddialara" -> "edildi. İddialara"
-    text  = re.sub(r"([.!?])([A-ZÇĞİÖŞÜ])", r"\1 \2", text)
-
     # 3. "eklenmişGörseldeki" -> "eklenmiş. Görseldeki"
     text = re.sub(r"([a-zçğıöşü]{3})([A-ZÇĞİÖŞÜ][a-zçğıöşü])", r"\1. \2", text)
 
     # 4. Put the protected words back
     for key, word in placeholders.items():
-        tezt = text.replace(key, word)
+        text = text.replace(key, word)
     return text
 
 def clean_text(text):
@@ -85,9 +83,11 @@ def clean_text(text):
 
     text = unicodedata.normalize("NFC", text)
 
-    text = remove_related_links(text)
+    text = text.replace('\\"', '"')  # remove escape characters left from export
 
-    text = split_glued_text(text)
+    text = split_glued_text(text)  # 1. separate glued sentences and headings
+
+    text = remove_related_links(text) # 2. now titles end with a period
 
     text = re.sub(r"\s+", " ", text).strip()
 
@@ -96,7 +96,8 @@ def clean_text(text):
 def is_headline_style(claim):
     """True if a claim reads like a conclusion headline rather than a claim."""
     claim = claim.strip()
-    return not re.search(r"(iddiası|iddia edildi\.?|\?)$", claim)
+    mentions_claim = re.search(r"[iİ]ddia", claim)
+    return not (mentions_claim or claim.endswith("?"))
 
 def clean_fctr(df):
     """Clean the raw FCTR dataframe and return a new dataframe."""
