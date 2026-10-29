@@ -19,3 +19,7 @@ COLLECTION_NAME = "fctr_chunks"
 # Chunking
 CHUNK_MAX_TOKENS = 300
 CHUNK_OVERLAP_SENTENCES = 1
+
+# Evaluation
+EVAL_DIR = PROJECT_ROOT / "data" / "eval"  # raw evaluation outputs (not committed)
+RESULTS_DIR = PROJECT_ROOT / "results" # summary metrics (committed)

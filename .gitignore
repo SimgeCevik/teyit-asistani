@@ -234,3 +234,6 @@ chroma_db/
 
 # Editör ayarları
 .vscode/
+
+# Evaluation
+data/eval/ 

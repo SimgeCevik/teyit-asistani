@@ -103,8 +103,8 @@ def build_prompt(claim, evidence):
     return PROMPT_TEMPLATE.format(claim=claim, evidence=format_evidence(evidence))
 
 # Ask gemini
-def ask_gemini(prompt, max_retries=5):
-    """Send the prompt to Gemini and return a validated FactCheckResult."""
+def ask_gemini(prompt, schema=FactCheckResult, max_retries=5):
+    """Send the prompt to Gemini and return an answer validated against `schema`."""
     client = get_client()
 
     for attempt in range(max_retries):
@@ -115,12 +115,12 @@ def ask_gemini(prompt, max_retries=5):
                 config=types.GenerateContentConfig(
                     temperature=0,
                     response_mime_type="application/json",
-                    response_schema=FactCheckResult,
+                    response_schema=schema,
                 ),
             )
             if response.parsed is not None:
                 return response.parsed
-            return FactCheckResult.model_validate_json(response.text)
+            return schema.model_validate_json(response.text)
 
         except errors.APIError as e:
             detail = str(e)
