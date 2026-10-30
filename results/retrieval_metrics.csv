@@ -1,0 +1,6 @@
+,paraphrased query,original claim text
+recall@1,0.99,0.99
+recall@3,1.0,1.0
+recall@5,1.0,1.0
+recall@10,1.0,1.0
+mrr,0.995,0.995
