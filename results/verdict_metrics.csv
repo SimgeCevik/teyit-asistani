@@ -1,3 +1,3 @@
-system,accuracy,macro_f1,abstained,confident_errors
-RAG (claim in archive),0.97,0.985,0.02,1
-No RAG (Gemini only),0.61,0.71,0.28,11
+system,accuracy,macro_f1,abstained,confident_errors,opposite_verdicts
+RAG (claim in archive),0.97,0.985,0.02,1,0
+No RAG (Gemini only),0.61,0.71,0.28,11,11
