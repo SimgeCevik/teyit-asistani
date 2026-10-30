@@ -1,2 +1,2 @@
-system,correct_abstention,decided
-RAG (claim not in archive),0.83,17
+system,correct_abstention,decided,decided_on_duplicate,adjusted_correct
+RAG (claim not in archive),0.83,17,14,0.97
