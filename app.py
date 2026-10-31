@@ -2,6 +2,7 @@
 
 # imports and page setups
 import pandas as pd
+import requests
 import streamlit as st
 
 from src import config
@@ -66,7 +67,7 @@ def verdict_pill(verdict):
             f"padding:0.1rem 0.6rem; margin:0 0.3rem 0.4rem 0; border-radius:1rem; "
             f"font-size:0.8rem;'>{label}</span>")
 
-def evidence_card(number, item, used, show_summary=True):
+def evidence_card(number, item, used, show_summary=True, summary_label="Bulguların özeti"):
     """One retrieved fact-check, with its source and whether it was used."""
     with st.container(border=True):
         st.markdown(f"**Kanıt {number}** · {item['source_name']} · {turkish_date(item['date'])}")
@@ -77,11 +78,11 @@ def evidence_card(number, item, used, show_summary=True):
         right.caption("✓ Bu iddiayla eşleşti" if used else "Farklı bir iddia, karara katılmadı")
 
         if show_summary:
-            with st.expander("Bulguların özeti"):
+            with st.expander(summary_label):
                 st.write(item["summary"])
         st.link_button("Doğrulama yazısını aç", item["url"])
 
-def show_evidence(result, evidence):
+def show_evidence(result, evidence, summary_label="Bulguların özeti"):
     """Matched evidence as cards; unmatched results in a collapsed section."""
     used_ids = {a.evidence_id for a in result.evidence_assessments if a.is_same_claim}
     numbered = list(enumerate(evidence, start=1))
@@ -91,7 +92,7 @@ def show_evidence(result, evidence):
     if used:
         st.subheader("Kararın dayandığı doğrulamalar")
         for number, item in used:
-            evidence_card(number, item, used=True)
+            evidence_card(number, item, used=True, summary_label=summary_label)
 
     if others:
         with st.expander(f"Aramada bulunan ama farklı iddiaları inceleyen yazılar ({len(others)})"):
@@ -134,23 +135,25 @@ with st.sidebar:
         f"{rag['accuracy']:.0%}",
         f"{(rag['accuracy'] - no_rag['accuracy']) * 100:+.0f} puan, kanıtsız modele göre",
     )
-    st.metric("Ters karar", int(rag["opposite_verdicts"]),
-              f"{int(no_rag['opposite_verdicts'])} kanıtsız modelde", delta_color="off")
-    st.metric(
-        "Arşivde olmayan iddiada uydurmama",
-        f"{abstention.loc[0, 'adjusted_correct']:.0%}",
-        f"katı ölçümde {abstention.loc[0, 'correct_abstention']:.0%}",
-        delta_color="off",
+    
+    st.metric("Ters karar", int(rag["opposite_verdicts"]))
+    st.caption(f"Kanıtsız modelde: {int(no_rag['opposite_verdicts'])}")
+
+    st.metric("Arşivde olmayan iddiada uydurmama", f"{abstention.loc[0, 'adjusted_correct']:.0%}")
+    st.caption(
+        f"Katı ölçümde {abstention.loc[0, 'correct_abstention']:.0%}; aradaki fark, "
+        "aynı iddianın arşivde başka bir kuruluşça da doğrulanmış olmasından kaynaklanıyor."
     )
 
     st.divider()
     st.header("Sınırlar")
     st.caption(
-            "Arşiv Temmuz 2023'te bitiyor. Güncel katman yalnızca bu üç kuruluşun daha önce "
-            "doğruladığı iddiaları bulabilir ve değerlendirme sonuçlarına dahil değildir. "
-            "Video ve görsel içerikli iddialar yalnızca metin olarak değerlendirilir. "
-            "Bu araç profesyonel doğrulamanın yerini tutmaz."
-        )
+        "Arşiv Temmuz 2023'te bitiyor. Güncel katman yalnızca bu üç kuruluşun daha önce "
+        "doğruladığı iddiaları bulabilir; bu yazıların yalnızca başlığını ve kararını görür, "
+        "içeriğini göremez. Güncel katman değerlendirme sonuçlarına dahil değildir. "
+        "Video ve görsel içerikli iddialar yalnızca metin olarak değerlendirilir. "
+        "Bu araç profesyonel doğrulamanın yerini tutmaz."
+    )
 
 n_articles = load_resources()
 
@@ -216,7 +219,7 @@ if "result" in st.session_state:
     verdict_badge(final.verdict)
     st.caption(source_note)
     st.write(final.explanation)
-    show_evidence(final, final_evidence)
+    show_evidence(final, final_evidence, summary_label="Doğrulama başlığı" if live_decided else "Bulguların özeti")
 
     # 2. How we got there
     if live_decided:
