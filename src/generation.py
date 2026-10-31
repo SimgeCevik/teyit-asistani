@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from src import config
 from src.retrieval import retrieve
+from src.factcheck_api import search_claims, to_evidence
 
 _client = None
 
@@ -69,7 +70,10 @@ def format_evidence(evidence):
             lines.append(HEADLINE_NOTE)
 
         lines.append(f"Bulguların özeti: {item['summary']}")
-        lines.append(f"İlgili bölüm: {item['text']}")
+
+        if item["text"]:
+            lines.append(f"İlgili bölüm: {item['text']}")
+        
         lines.append(f"Kaynak: {item['url']}")
         blocks.append("\n".join(lines))
     return "\n\n".join(blocks)
@@ -149,6 +153,15 @@ def fact_check(claim, top_k=3, exclude_doc_id=None):
     evidence = add_summaries(evidence) # A -> augmentation
     prompt = build_prompt(claim, evidence) # A -> augmentation
     result = apply_guardrails(ask_gemini(prompt)) # G -> generate and check
+    return result, evidence
+
+def fact_check_live(claim, max_items=3):
+    """Second layer: search recent fact-checks via the Fact Check API and judge them."""
+    evidence = to_evidence(search_claims(claim), max_items)
+    if not evidence:
+        return None, []
+    prompt = build_prompt(claim, evidence)
+    result = apply_guardrails(ask_gemini(prompt))
     return result, evidence
 
 
