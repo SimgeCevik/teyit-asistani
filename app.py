@@ -146,11 +146,11 @@ with st.sidebar:
     st.divider()
     st.header("Sınırlar")
     st.caption(
-        "Arşiv Temmuz 2023'te bitiyor. Güncel katman yalnızca bu üç kuruluşun daha önce "
-        "doğruladığı iddiaları bulabilir ve değerlendirme sonuçlarına dahil değildir. "
-        "Video ve görsel içerikli iddialar yalnızca metin olarak değerlendirilir. "
-        "Bu araç profesyonel doğrulamanın yerini tutmaz."
-    )
+            "Arşiv Temmuz 2023'te bitiyor. Güncel katman yalnızca bu üç kuruluşun daha önce "
+            "doğruladığı iddiaları bulabilir ve değerlendirme sonuçlarına dahil değildir. "
+            "Video ve görsel içerikli iddialar yalnızca metin olarak değerlendirilir. "
+            "Bu araç profesyonel doğrulamanın yerini tutmaz."
+        )
 
 n_articles = load_resources()
 
@@ -235,6 +235,9 @@ if "result" in st.session_state:
         if live_evidence:
             with st.expander(f"Güncel aramada bulunan ama farklı iddiaları inceleyen yazılar "
                              f"({len(live_evidence)})"):
+                st.caption("Bu yazılar iddianla birebir aynı değil, ancak konuyla ilgili bilgi "
+                           "içerebilir. Güncel aramada yalnızca yazıların başlığı görülebildiği için "
+                           "ayrıntılar için doğrulama yazısını açmanı öneririz.")
                 for number, item in enumerate(live_evidence, start=1):
                     evidence_card(number, item, used=False, show_summary=False)
 
