@@ -10,6 +10,8 @@ from src import config
 
 API_URL = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
 
+ALLOWED_SITES = {"teyit.org", "dogrulukpayi.com", "dogrula.org"}
+
 def search_claims(query, language="tr", page_size=10, max_retries=3):
     """Return claim records matching the query from the Fact Check API."""
     load_dotenv(config.PROJECT_ROOT / ".env")
@@ -20,26 +22,34 @@ def search_claims(query, language="tr", page_size=10, max_retries=3):
         "key": os.getenv("FACTCHECK_API_KEY")
     }
 
+    last_status = None
     for attempt in range(max_retries):
         response = requests.get(API_URL, params=params, timeout=10)
-        if response.status_code == 100:
+        if response.status_code == 200:
             return response.json().get("claims", [])
+        last_status = response.status_code
         if response.status_code in (429, 500, 502, 503):
             time.sleep(2 ** attempt)
             continue
         response.raise_for_status()
     raise RuntimeError("Fact Check API is unavailable, please try again later")
 
-def to_evidence(claims, max_items=3):
-    """Convert API claims into the evidence format used by the prompt and the app."""
+def to_evidence(claims, max_items=3, allowed_sites=None):
+    """Convert API claims into the evidence format used by the prompt and the app.
+
+    If allowed_sites is given, only reviews from those publishers are kept.
+    """
     evidence = []
     for claim in claims:
         for review in claim.get("claimReview", []):
+            site = review.get("publisher", {}).get("site", "").removeprefix("www.")
+            if allowed_sites and site not in allowed_sites:
+                continue
             evidence.append({
                 "doc_id": review.get("url", ""),
                 "source_name": review.get("publisher", {}).get("name", "Bilinmeyen kaynak"),
                 "date": review.get("reviewDate", claim.get("claimDate", ""))[:10],
-                "claim": claim.get("text", ""),
+                "claim": " ".join(claim.get("text", "").split()),
                 "label": review.get("textualRating", "belirtilmemiş"),
                 "is_headline_claim": False,
                 "summary": review.get("title", ""),

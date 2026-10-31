@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from src import config
 from src.retrieval import retrieve
-from src.factcheck_api import search_claims, to_evidence
+from src.factcheck_api import ALLOWED_SITES, search_claims, to_evidence
 
 _client = None
 
@@ -157,7 +157,7 @@ def fact_check(claim, top_k=3, exclude_doc_id=None):
 
 def fact_check_live(claim, max_items=3):
     """Second layer: search recent fact-checks via the Fact Check API and judge them."""
-    evidence = to_evidence(search_claims(claim), max_items)
+    evidence = to_evidence(search_claims(claim), max_items, allowed_sites=ALLOWED_SITES)
     if not evidence:
         return None, []
     prompt = build_prompt(claim, evidence)

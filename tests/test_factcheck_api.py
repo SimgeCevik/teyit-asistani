@@ -31,3 +31,13 @@ def test_to_evidence_handles_missing_fields():
 def test_to_evidence_limits_results():
     claims = [{"text": str(i), "claimReview": [{"url": str(i)}]} for i in range(10)]
     assert len(to_evidence(claims, max_items=3)) == 3
+
+
+def test_to_evidence_filters_publishers():
+    claims = [{"text": "x", "claimReview": [
+        {"publisher": {"site": "www.teyit.org"}, "url": "a"},
+        {"publisher": {"site": "cancerdisinfo.org"}, "url": "b"},
+        {"publisher": {"site": "dogrulukpayi.com"}, "url": "c"},
+    ]}]
+    items = to_evidence(claims, allowed_sites={"teyit.org", "dogrulukpayi.com"})
+    assert [item["url"] for item in items] == ["a", "c"]
