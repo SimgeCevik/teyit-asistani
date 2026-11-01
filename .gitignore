@@ -237,3 +237,7 @@ chroma_db/
 
 # Evaluation
 data/eval/ 
+
+# Local AI tool settings
+.agents/
+.claude/
