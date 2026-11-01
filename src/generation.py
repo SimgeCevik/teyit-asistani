@@ -155,13 +155,42 @@ def fact_check(claim, top_k=3, exclude_doc_id=None):
     result = apply_guardrails(ask_gemini(prompt)) # G -> generate and check
     return result, evidence
 
+class SearchQueries(BaseModel):
+    queries: list[str]
+
+
+QUERY_PROMPT = """Aşağıdaki iddiayı Google Fact Check aramasıyla kontrol etmek istiyoruz.
+Bu arama motoru, sorgudaki kelimelerin hepsinin geçtiği sonuçları getiriyor;
+bu yüzden kısa ve öz sorgular gerekiyor.
+
+İddia için 3 farklı Türkçe arama sorgusu yaz:
+- Her sorgu 2 ile 4 kelime olsun.
+- En önemli kişi, yer, kurum ve olay adlarını kullan.
+- "doğru mu", "gerçek mi", "iddia" gibi soru ve iddia kalıplarını kullanma.
+- Kelimeleri yalın hâliyle yaz ("Kolombiya'daki" yerine "Kolombiya").
+
+İDDİA:
+{claim}"""
+
+
+def search_queries(claim):
+    """Ask Gemini for short keyword queries that a keyword search engine can match."""
+    return ask_gemini(QUERY_PROMPT.format(claim=claim), schema=SearchQueries).queries
+
 def fact_check_live(claim, max_items=3):
     """Second layer: search recent fact-checks via the Fact Check API and judge them."""
     evidence = to_evidence(search_claims(claim), max_items, allowed_sites=ALLOWED_SITES)
+
+    # The API matches keywords, so a full sentence often finds nothing: rewrite it
+    if not evidence:
+        for query in search_queries(claim):
+            evidence = to_evidence(search_claims(query), max_items, allowed_sites=ALLOWED_SITES)
+            if evidence:
+                break
+
     if not evidence:
         return None, []
     prompt = build_prompt(claim, evidence)
     result = apply_guardrails(ask_gemini(prompt))
     return result, evidence
-
 
