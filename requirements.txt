@@ -1,11 +1,12 @@
 pandas
 numpy
+pyarrow
 requests
 python-dotenv
 google-genai
+pydantic
 sentence-transformers
 chromadb
-rank_bm25
 scikit-learn
 matplotlib
 seaborn
